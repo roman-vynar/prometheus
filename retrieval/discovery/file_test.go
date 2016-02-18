@@ -8,6 +8,7 @@ import (
 	"time"
 
 	"github.com/prometheus/common/model"
+	"golang.org/x/net/context"
 
 	"github.com/prometheus/prometheus/config"
 )
@@ -27,11 +28,11 @@ func testFileSD(t *testing.T, ext string) {
 	conf.RefreshInterval = model.Duration(1 * time.Hour)
 
 	var (
-		fsd  = NewFileDiscovery(&conf)
-		ch   = make(chan config.TargetGroup)
-		done = make(chan struct{})
+		fsd         = NewFileDiscovery(&conf)
+		ch          = make(chan []*config.TargetGroup)
+		ctx, cancel = context.WithCancel(context.Backogrund())
 	)
-	go fsd.Run(ch, done)
+	go fsd.Run(ctx, ch)
 
 	select {
 	case <-time.After(25 * time.Millisecond):
@@ -107,6 +108,6 @@ func testFileSD(t *testing.T, ext string) {
 
 	os.Rename(newf.Name(), "fixtures/_test"+ext)
 
-	close(done)
+	cancel()
 	<-drained
 }
